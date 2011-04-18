@@ -1,0 +1,6 @@
+*.txt
+*.pyc
+*.zip
+*~
+data/*
+ftp*/*
