@@ -297,10 +297,10 @@ def calculate_fold_symmetry(molecule):
     #
     # distance = distances[src][target]
     
-    #sort distance matrix
+    # sort distance matrix
     distances = sort(distances)
     distances = sort(distances, axis=0)    
-    #now distances are sorted by row and also by column
+    # now distances are sorted by row and also by column
     
     #TODO:do we need to do this for all atoms or can we stop at a certain point?
     
@@ -327,6 +327,9 @@ def calculate_fold_symmetry(molecule):
     return fold_symmetry
     
     #TODO: calculate planes of symmetry?
+	# figure out vizualization
+	# figure out threshold
+	
     
 if __name__ == "__main__":
     main()
