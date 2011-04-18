@@ -6,19 +6,41 @@
 ##
 
 import re, math, os
-from numpy import array, sort, empty, empty_like, float32
+from numpy import array, sort, empty, empty_like, float32, int32
 
 #whether to use GPU-accelerated atomic distance calculations
-USE_GPU_ACCELERATION = False
-if USE_GPU_ACCELERATION:
+USE_GPU = True
+if USE_GPU:
     import pycuda.driver as cuda
     import pycuda.autoinit
-    from pycuda.compiler import SourceModule
+    from pycuda import compiler, gpuarray
+    
+    block_dim=(8,8,1)
+    THREAD_X = 8.0
+    THREAD_Y = 8.0
+    
+    mod = compiler.SourceModule("""
+      #include <math.h>
+    
+      __global__ void distances(float *a, float *result, int N)
+      {
+        int idx = threadIdx.x + __umul24(blockIdx.x,8);
+        int idy = threadIdx.y + __umul24(blockIdx.y,8);            
+        
+        if(idx < N && idy < N)
+        {
+        result[idx + __umul24(idy,N)] = sqrt(pow(a[__umul24(idx,3)] - a[__umul24(idy,3)],2) + pow(a[__umul24(idx,3) + 1] - a[__umul24(idy,3) + 1],2) + pow(a[__umul24(idx,3) + 2] - a[__umul24(idy,3) + 2],2));
+        }
+      }
+      """)
+      
+    #get the function on the GPU
+    func = mod.get_function("distances")
 
 #whether to use multiple processes, sharing molecules with a Queue
 #NOTE: you can't do multiprocessing with gpu acceleration unless you have 
 #multiple GPUs
-USE_MULTIPROCESSING = True
+USE_MULTIPROCESSING = False
 
 if USE_MULTIPROCESSING:
     from multiprocessing import Queue, Process, cpu_count
@@ -251,40 +273,28 @@ def calculate_fold_symmetry(molecule):
         return 1
     
     #distance matrix on CPU
-    distances = empty([N,N])
-    if USE_GPU_ACCELERATION:
+    distances = array([[0.0] * N] * N)
+    if USE_GPU:
         
         #transfer data to GPU
+        import time
+        start = time.time()
+        
         a = array(atoms, float32)
         a_gpu = cuda.mem_alloc(a.nbytes)
         cuda.memcpy_htod(a_gpu, a)
         
-        mod = SourceModule("""
-          __global__ void doublify(float *a)
-          {
-            int idx = threadIdx.x + threadIdx.y*4;
-            a[idx] *= 2;
-          }
-          """)
-          
-        func = mod.get_function("doublify")
-        func(a_gpu, block=(4,4,1))
+        grid_dim=(int(math.ceil(N/THREAD_X)),int(math.ceil(N/THREAD_Y)) )
         
-        a_doubled = empty_like(a)
-        cuda.memcpy_dtoh(a_doubled, a_gpu)
-        print a_doubled
-        print a
+        #create results array
+        distances_gpu = gpuarray.empty((N, N), float32)
         
-        distances = array([[0.0] * N] * N)
-        for i,atom in enumerate(atoms):
-            for j,target in enumerate(atoms):        
-                if i != j and j >= i:   #lower left corner of matrix
-                    distances[i][j] = distances[j][i] = dist(atom, target)
         
-        print "CPU version"
-        print distances
-        return 1
+        func(a_gpu, distances_gpu, int32(N), block=block_dim, grid=grid_dim)
         
+        distances = distances_gpu.get()
+        
+        #print N, "-", grid_dim, "-", block_dim, "-", time.time() - start
         
     else:
         for i,atom in enumerate(atoms):
