@@ -58,13 +58,13 @@ EXCLUDE_SINGLE_ATOM = True
 PRECISION = 3
 
 #how much error is tolerated in computing sameness
-TOLERANCE = 0.05
+TOLERANCE = 0.075
 
 #for processing SDF files
 #the specification can be found at http://www.symyx.com/downloads/public/ctfile/ctfile.pdf
 DELIMITER_RE = re.compile("$$$$")
 #MOLFILE_DELIMITER = "V2000"
-ATOM_HEADER_RE = re.compile("^(\d+\s+)(?:\d+\s+){8}V2000")
+ATOM_HEADER_RE = re.compile("^(\d+)\s+(?:\d+\s+){7,8}V2000")
 #ATOM_RE = "^\t?(\D?\d+\.\d+) +(\D?\d+\.\d+) +(\D?\d+\.\d+) (\w+)"
 ID_FIELD_RE = re.compile("^> <PUBCHEM_COMPOUND_CID>")
 
@@ -98,7 +98,6 @@ def process_single(filename):
     single process detection of symmetry
     '''
     for molfile in extract_molfiles(filename):
-                
         sym = calculate_fold_symmetry(molfile)
         if sym > 1:
             print molfile['id'], sym
@@ -182,7 +181,10 @@ def extract_molfiles(filename):
             header = ATOM_HEADER_RE.match(line)
             if header:
                 
-                num_atoms = int(header.group(1))
+                if len(header.group(1)) == 5:
+                    num_atoms = int(line[0:2])
+                else:
+                    num_atoms = int(line[0:3])#header.group(1))
                 atom_list = []
                 
                 for i in range(num_atoms):
@@ -267,7 +269,7 @@ def calculate_fold_symmetry(molecule):
     
     #number of atoms
     N = len(atoms)
-    
+        
     #single-atom molecules are excluded
     if EXCLUDE_SINGLE_ATOM and N == 1:
         return 1
