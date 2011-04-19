@@ -6,7 +6,7 @@
 ##
 
 import re, math, os
-from numpy import array, sort, empty, empty_like, float32, int32
+from numpy import array, sort, empty, empty_like, float32, int32, around
 
 #whether to use GPU-accelerated atomic distance calculations
 USE_GPU = True
@@ -29,7 +29,7 @@ if USE_GPU:
         
         if(idx < N && idy < N)
         {
-        result[idx + __umul24(idy,N)] = sqrt(pow(a[__umul24(idx,3)] - a[__umul24(idy,3)],2) + pow(a[__umul24(idx,3) + 1] - a[__umul24(idy,3) + 1],2) + pow(a[__umul24(idx,3) + 2] - a[__umul24(idy,3) + 2],2));
+        result[idx + __umul24(idy,N)] = floorf(sqrt(pow(a[__umul24(idx,3)] - a[__umul24(idy,3)],2) + pow(a[__umul24(idx,3) + 1] - a[__umul24(idy,3) + 1],2) + pow(a[__umul24(idx,3) + 2] - a[__umul24(idy,3) + 2],2)) * 1000 +  0.5) / 1000;
         }
       }
       """)
@@ -233,7 +233,7 @@ def check_max_symmetry_support(a, N):
     best_count = 99999
     while index < N-1:
         count = 1
-        while index < N-1 and a[index] == a[index+1]: #TODO: should this also use a delta instead of ==?
+        while index < N-1 and math.fabs(a[index] - a[index+1]) < TOLERANCE: 
             count += 1
             index += 1
         
@@ -257,7 +257,7 @@ def dist(coord1, coord2):
     calculates the distance between two (x,y,z,...) tuples (coord1, coord2)
     '''
     
-    #TODO: don't need to do the square root -- but need to adjust TOLERANCE to compensate. however, this only saves like 2 seconds on the entire calculation
+    #TODO: don't need to do the square root -- but need to adjust TOLERANCE to compensate. however, this only saves like 2 seconds on the entire calculation... forget it
     
     return round(math.sqrt( (coord1[0] - coord2[0]) ** 2 + (coord1[1] - coord2[1]) ** 2 + (coord1[2] - coord2[2]) ** 2 ),PRECISION)
     
@@ -289,12 +289,9 @@ def calculate_fold_symmetry(molecule):
         #create results array
         distances_gpu = gpuarray.empty((N, N), float32)
         
-        
         func(a_gpu, distances_gpu, int32(N), block=block_dim, grid=grid_dim)
         
         distances = distances_gpu.get()
-        
-        #print N, "-", grid_dim, "-", block_dim, "-", time.time() - start
         
     else:
         for i,atom in enumerate(atoms):
