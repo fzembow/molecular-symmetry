@@ -4,11 +4,18 @@ DELIMITER = "$$$$"
 def main():
     
     import sys
-    if len(sys.argv) != 3:
-        print "usage: python extract_sdf.py (input) (number to extract)"
+    if len(sys.argv) < 2:
+        print "usage: python utils.py (input) (number to extract)"
+        print "or"
+        print "usage: python utils.py (input_file) //for downloading images"
         sys.exit(1)
     
     filename = sys.argv[1]
+    
+    if len(sys.argv) == 2:
+        download_images(filename)
+        sys.exit(0)
+    
     #below, TRUNCATE is being run
     try:
         n = int(sys.argv[2])
@@ -21,6 +28,28 @@ def main():
         sys.exit(1)
     
     truncate_sdf(filename, n)
+
+def download_images(filename):
+
+    import subprocess
+    folder_name = filename.split(".")[0] + '-img'
+    target_image = folder_name + "/%i.png"
+    url = "http://pubchem.ncbi.nlm.nih.gov/image/imgsrv.fcgi?t=l&cid=%i"
+    
+    subprocess.call(["rm","-rf", folder_name])
+    subprocess.call(["mkdir",folder_name])
+    
+    f = open(filename, "r")
+    
+    for line in f:
+        l = line.strip().split(" ")
+        if len(l) == 2:
+            sym = int(l[1])
+            cid = int(l[0])
+            
+            subprocess.call(["wget", "-O", target_image % cid, url % cid])
+    
+    f.close()
 
 def truncate_sdf(filename, n):
     '''

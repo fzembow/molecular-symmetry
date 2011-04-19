@@ -1,3 +1,44 @@
 CS 264 final project:
 
 finding symmetry in the universe of organic compounds
+
+
+NOTES:
+
+#Retrieval of chemical structures from PubChem:
+
+2D Structures (to get all)
+wget --mirror --accept "*.sdf.gz" ftp://ftp.ncbi.nlm.nih.gov/pubchem/Compound/CURRENT-Full/SDF/
+
+3D structures can be retrieved from 
+ftp://ftp.ncbi.nih.gov/pubchem/Compound_3D/01_conf_per_cmpd/
+
+Images of structures can be downloaded as:
+http://pubchem.ncbi.nlm.nih.gov/image/imgsrv.fcgi?t=l&cid=3794239
+
+
+BENCHMARKING
+
+91.8720929623 seconds elapsed (total)
+2.00971269608 seconds sorting
+78.4631748199 seconds calculating distances <--- GPU acceleration can really help, calculation of distances is what we spend 80% of the time doing
+
+ACCURACY
+
+Appear in 3D model, not in 2D, and is correct:
+
+21397
+22288
+21971
+20060
+19221
+15699
+13915 (bad ass)
+13914
+11088
+8970
+359
+
+Sometimes, hydrogen causes these problems, like on hydroxyls
+
+Rotations? Resonance?
