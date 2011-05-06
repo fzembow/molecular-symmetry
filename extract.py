@@ -40,7 +40,7 @@ if USE_GPU:
 #whether to use multiple processes, sharing molecules with a Queue
 #NOTE: you can't do multiprocessing with gpu acceleration unless you have 
 #multiple GPUs
-USE_MULTIPROCESSING = False
+USE_MULTIPROCESSING = True
 
 if USE_MULTIPROCESSING:
     from multiprocessing import Queue, Process, cpu_count
@@ -49,7 +49,7 @@ if USE_MULTIPROCESSING:
     QUEUE_TIMEOUT = 0.25
 
 #whether to show timing information
-TIMING = True
+TIMING = False
 
 #whether to exclude single atoms from the result (which have infinite sym.)
 EXCLUDE_SINGLE_ATOM = True
