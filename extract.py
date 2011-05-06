@@ -9,7 +9,7 @@ import re, math, os
 from numpy import array, sort, empty, empty_like, float32, int32, around
 
 #whether to use GPU-accelerated atomic distance calculations
-USE_GPU = True
+USE_GPU = False
 if USE_GPU:
     import pycuda.driver as cuda
     import pycuda.autoinit
@@ -219,11 +219,18 @@ def arrays_equal(a,b):
     determines whether two arrays are equal, elementwise. 
     NOTE: assumes the arrays are the same length, and that the first element is always the same
     '''
-    for i in range(1,len(a)):
+    false_count = 0.0
+
+    for i in range(1, len(a)):
         if math.fabs(a[i] - b[i]) > TOLERANCE:
-            return False
-    
-    return True
+            false_count += 1.0
+
+    full = len(a) - 1.0
+
+    if  (false_count / full) < 0.1:
+        return True
+    else:
+        return False
     
 def check_max_symmetry_support(a, N):
     '''
