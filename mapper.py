@@ -6,7 +6,7 @@
 # 
 
 TWO_D_FOLDER = "ftp://ftp.ncbi.nlm.nih.gov/pubchem/Compound/CURRENT-Full/SDF/"
-THREE_D_FOLDER = "ftp://ftp.ncbi.nih.gov/pubchem/Compound_3D/01_conf_per_cmpd/"
+THREE_D_FOLDER = "ftp://ftp.ncbi.nih.gov/pubchem/Compound_3D/01_conf_per_cmpd/SDF/"
 
 import sys, subprocess
 
