@@ -126,13 +126,13 @@ def process_single(filename, secondfile):
         
         sym = calculate_fold_symmetry(molfile['atoms'])
         if sym > 1:
-            #C2 = calculate_rotation(molfile['atoms'])
-            print molfile['id'], len(molfile['atoms']), sym#, C2
+            C2 = calculate_rotation(molfile['atoms'])
+            print molfile['id'], len(molfile['atoms']), sym, C2
         elif "atoms3d" in molfile:
             sym = calculate_fold_symmetry(molfile['atoms3d'])
             if sym > 1:
-                #C2 = calculate_rotation(molfile['atoms3d'])
-                print molfile['id'], len(molfile['atoms']), sym, "3d"#, C2
+                C2 = calculate_rotation(molfile['atoms3d'])
+                print molfile['id'], len(molfile['atoms']), sym, "3d", C2
             
 def process_multiple(filename, secondfile=None):
     '''
@@ -206,13 +206,13 @@ def worker(q, ):
             for molfile in work:
                 sym = calculate_fold_symmetry(molfile['atoms'])                    
                 if sym > 1:
-                    #C2 = calculate_rotation(molfile['atoms'])
-                    print molfile['id'], len(molfile['atoms']), sym#, C2
+                    C2 = calculate_rotation(molfile['atoms'])
+                    print molfile['id'], len(molfile['atoms']), sym, C2
                 elif "atoms3d" in molfile:
                     sym = calculate_fold_symmetry(molfile['atoms3d'])
                     if sym > 1:
-                        #C2 = calculate_rotation(molfile['atoms3d'])
-                        print molfile['id'], len(molfile['atoms']), sym#, C2
+                        C2 = calculate_rotation(molfile['atoms3d'])
+                        print molfile['id'], len(molfile['atoms']), sym, C2
                     
         #if there are no more items on the Queue then we are done
         except Empty:
@@ -344,57 +344,35 @@ def calculate_rotation(atoms):
     centroid = find_centroid(atoms)
 
     new_coordinates_z = []
-
-    for atom in atoms:
-        mat = matrix([[atom[0] - centroid[0]], [atom[1] - centroid[1]], [atom[2] - centroid[2]]])
-        new_coord = find_new_coord_z(mat)
-        new_coordinates_z.append((new_coord[0,0] + centroid[0], new_coord[1,0]+centroid[1], new_coord[2,0] + centroid[2]))
-        
-    atoms_s =  sorted(atoms, key=lambda i: (i[0], i[1]))
-    new_coordinates_s = sorted(new_coordinates_z, key=lambda i: (i[0], i[1]))
-   
-    C2_z = True
-    C2_y = True
-    C2_x = True
-
-    for a, b in izip(atoms_s, new_coordinates_s):
-        if math.fabs(a[0] - b[0]) > TOLERANCE or math.fabs(a[1] - b[1]) > TOLERANCE or math.fabs(a[2] - b[2]) > TOLERANCE:
-            C2_z = False
-    
-    if C2_z:
-        return 1
-    
     new_coordinates_y = []
-    for atom in atoms:
-        mat = matrix([[atom[0] - centroid[0]], [atom[1] - centroid[1]], [atom[2] - centroid[2]]])
-        new_coord = find_new_coord_y(mat)
-        new_coordinates_y.append((new_coord[0,0] + centroid[0], new_coord[1,0]+centroid[1], new_coord[2,0] + centroid[2]))
-        
-    new_coordinates_s = sorted(new_coordinates_y, key=lambda i: (i[0], i[1]))
-
-    for a, b in izip(atoms_s, new_coordinates_s):
-        if math.fabs(a[0] - b[0]) > TOLERANCE or math.fabs(a[1] - b[1]) > TOLERANCE or math.fabs(a[2] - b[2]) > TOLERANCE:
-            C2_y = False
-
-    if C2_y:
-        return 1
-
     new_coordinates_x = []
+
     for atom in atoms:
         mat = matrix([[atom[0] - centroid[0]], [atom[1] - centroid[1]], [atom[2] - centroid[2]]])
-        new_coord = find_new_coord_x(mat)
-        new_coordinates_x.append((new_coord[0,0] + centroid[0], new_coord[1,0]+centroid[1], new_coord[2,0] + centroid[2]))
-        
-    new_coordinates_s = sorted(new_coordinates_x, key=lambda i: (i[0], i[1]))
+        new_coord_z = find_new_coord_z(mat)
+        new_coord_y = find_new_coord_y(mat)
+        new_coord_x = find_new_coord_x(mat)
+        new_coordinates_z.append((new_coord_z[0,0] + centroid[0], new_coord_z[1,0]+centroid[1], new_coord_z[2,0] + centroid[2]))
+        new_coordinates_y.append((new_coord_y[0,0] + centroid[0], new_coord_y[1,0]+centroid[1], new_coord_y[2,0] + centroid[2]))
+        new_coordinates_x.append((new_coord_x[0,0] + centroid[0], new_coord_x[1,0]+centroid[1], new_coord_x[2,0] + centroid[2]))
+            
+    atoms_s =  sorted(atoms, key=lambda i: (i[0], i[1]))
+    new_coordinates_z_s = sorted(new_coordinates_z, key=lambda i: (i[0], i[1]))
 
-    for a, b in izip(atoms_s, new_coordinates_s):
-        if math.fabs(a[0] - b[0]) > TOLERANCE or math.fabs(a[1] - b[1]) > TOLERANCE or math.fabs(a[2] - b[2]) > TOLERANCE:
-            C2_x = False
-
-    if C2_x:
+    if compare_lists(atoms_s, new_coordinates_z_s):
+        return 1
+    elif compare_lists(atoms_s, sorted(new_coordinates_y, key=lambda i: (i[0], i[1]))):
+        return 1
+    elif compare_lists(atoms_s, sorted(new_coordinates_x, key=lambda i: (i[0], i[1]))):
         return 1
     else:
         return 0
+          
+def compare_lists (lst1, lst2):
+    for a, b in izip(lst1, lst2):
+        if math.fabs(a[0] - b[0]) > TOLERANCE or math.fabs(a[1] - b[1]) > TOLERANCE or math.fabs(a[2] - b[2]) > TOLERANCE:
+            return False
+    return True
 
 def find_new_coord_z(mat):
     C2_z_mat = matrix('-1 0 0; 0 -1 0; 0 0 1')
