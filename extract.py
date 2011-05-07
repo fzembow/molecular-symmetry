@@ -55,6 +55,9 @@ TIMING = False
 #whether to exclude single atoms from the result (which have infinite sym.)
 EXCLUDE_SINGLE_ATOM = True
 
+#whether to exclude hydrogens from the calculation (they are mostly just implicit H anyway)
+EXCLUDE_HYDROGEN = False
+
 #how many decimal places to keep when computing distance
 PRECISION = 3
 
@@ -93,20 +96,43 @@ def main():
         
     #run calculation on all molecules    
     else:
-        process_single(filename)
+        process_single(filename, filename2)
     
     if TIMING:    
         print (time.time() - start), "seconds elapsed (total)"
         
-def process_single(filename):
+def process_single(filename, secondfile):
     '''
     single process detection of symmetry
     '''
+    
+    #if we are syncing with a 3D file
+    if secondfile is not None:
+        two_molfiles = True
+        second_generator = extract_molfiles(secondfile)
+        molfile2 = second_generator.next()
+    else:
+        two_molfiles = False
+    
     for molfile in extract_molfiles(filename):
+        
+        if two_molfiles:
+            if molfile2['id'] == molfile['id']:
+                molfile['atoms3d'] = molfile2['atoms']
+                try:
+                    molfile2 = second_generator.next()
+                except StopIteration:
+                    two_molfiles = False
+        
         sym = calculate_fold_symmetry(molfile['atoms'])
         if sym > 1:
-            type = calculate_rotation(molfile['atoms'])
-            print molfile['id'], sym, type
+            #C2 = calculate_rotation(molfile['atoms'])
+            print molfile['id'], len(molfile['atoms']), sym#, C2
+        elif "atoms3d" in molfile:
+            sym = calculate_fold_symmetry(molfile['atoms3d'])
+            if sym > 1:
+                #C2 = calculate_rotation(molfile['atoms3d'])
+                print molfile['id'], len(molfile['atoms']), sym, "3d"#, C2
             
 def process_multiple(filename, secondfile=None):
     '''
@@ -180,11 +206,13 @@ def worker(q, ):
             for molfile in work:
                 sym = calculate_fold_symmetry(molfile['atoms'])                    
                 if sym > 1:
-                    print molfile['id'], sym, C2
+                    #C2 = calculate_rotation(molfile['atoms'])
+                    print molfile['id'], len(molfile['atoms']), sym#, C2
                 elif "atoms3d" in molfile:
                     sym = calculate_fold_symmetry(molfile['atoms3d'])
                     if sym > 1:
-                        print molfile['id'], sym
+                        #C2 = calculate_rotation(molfile['atoms3d'])
+                        print molfile['id'], len(molfile['atoms']), sym#, C2
                     
         #if there are no more items on the Queue then we are done
         except Empty:
@@ -227,6 +255,9 @@ def extract_molfiles(filename):
                     
                     #for j in range(3):
                     #    np_atom_list[i][j] = float(line[0])
+                    if EXCLUDE_HYDROGEN:
+                        if line[3] == 'H':
+                            continue
                     
                     atoms = (float(line[0]), float(line[1]), float(line[2]))#, line[3])
                     #atoms = (float(line[0]), float(line[1]), float(line[2]), line[3])
