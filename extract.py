@@ -40,7 +40,7 @@ if USE_GPU:
 #whether to use multiple processes, sharing molecules with a Queue
 #NOTE: you can't do multiprocessing with gpu acceleration unless you have 
 #multiple GPUs
-USE_MULTIPROCESSING = True
+USE_MULTIPROCESSING = False
 
 if USE_MULTIPROCESSING:
     from multiprocessing import Queue, Process, cpu_count
@@ -317,9 +317,9 @@ def calculate_rotation(molecule):
         new_coord = find_new_coord(mat)
         new_coordinates.append((new_coord[0,0] + centroid[0], new_coord[1,0]+centroid[1], new_coord[2,0] + centroid[2]))
         
-    atoms_s =  sort(atoms, axis=0)
-    new_coordinates_s = sort(new_coordinates, axis=0)
-    print atoms
+    atoms_s =  sorted(atoms, key=lambda i: i[0])
+    new_coordinates_s = sorted(new_coordinates, key=lambda i: i[0])
+    print new_coordinates_s
     print atoms_s
     #if arrays_equal(atoms_s, new_coordinates_s):
     #    return "C2 along z-axis"
