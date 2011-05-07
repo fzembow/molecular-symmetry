@@ -1,0 +1,2 @@
+Compound_000000001_000025000.sdf.gz
+Compound_000025001_000050000.sdf.gz
