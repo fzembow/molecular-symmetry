@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #
 # a Hadoop streaming mapper that downloads a data shard 
 # from NCBI and runs a molecular calculation on it
