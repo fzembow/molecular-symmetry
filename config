@@ -1,0 +1,34 @@
+[global]
+DEFAULT_TEMPLATE=smallcluster
+ENABLE_EXPERIMENTAL=False
+
+[aws info]
+AWS_ACCESS_KEY_ID = AKIAJPJF5L3NLBWKPP4Q
+AWS_SECRET_ACCESS_KEY = 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
+AWS_USER_ID=618163227139
+
+[key cs264]
+KEY_LOCATION=/Users/fzembow/.ssh/cs264.pem
+
+[cluster smallcluster]
+KEYNAME = cs264
+CLUSTER_SIZE = 2
+CLUSTER_USER = sgeadmin
+CLUSTER_SHELL = bash
+NODE_IMAGE_ID = ami-8852a0e1
+NODE_INSTANCE_TYPE = m1.large
+#VOLUMES = data
+PLUGINS = hadoop
+
+[cluster computecluster]
+EXTENDS = smallcluster
+CLUSTER_SIZE = 25
+NODE_INSTANCE_TYPE = cg1.4xlarge
+NODE_IMAGE_ID = ami-06a75a6f
+
+#[volume data]
+#VOLUME_ID = vol-8bfdd7e3
+#MOUNT_PATH = /mnt/data
+
+[plugin hadoop]
+SETUP_CLASS = hadoop.Hadoop

@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.6
 
 ##
 ## for testing purposes: extract N records from the beginning of an SDF file that contains many
 ## and prints it to stdout
 ##
 
-import re, math, os
+import re, math, os, sys, time
 from numpy import array, sort, empty, empty_like, float32, int32, around, matrix, asarray
 from itertools import izip
 
@@ -41,7 +41,7 @@ if USE_GPU:
 #whether to use multiple processes, sharing molecules with a Queue
 #NOTE: you can't do multiprocessing with gpu acceleration unless you have 
 #multiple GPUs
-USE_MULTIPROCESSING = False
+USE_MULTIPROCESSING = True
 
 if USE_MULTIPROCESSING:
     from multiprocessing import Manager, Queue, Process, cpu_count
@@ -132,7 +132,7 @@ def process_single(filename, secondfile):
             sym = calculate_fold_symmetry(molfile['atoms3d'])
             if sym > 1:
                 C2 = calculate_rotation(molfile['atoms3d'])
-                print molfile['id'], len(molfile['atoms']), sym, "3d", C2
+                print molfile['id'], len(molfile['atoms']), sym, C2
             
 def process_multiple(filename, secondfile=None):
     '''
@@ -151,8 +151,8 @@ def process_multiple(filename, secondfile=None):
         two_molfiles = False
     
     #add all molecules in a file to the queue, in lists of size WORK_SIZE
-    manager = Manager()
-    q = manager.Queue()
+    #manager = Manager()
+    q = Queue()#manager.Queue()
     work = []
     for molfile in extract_molfiles(filename):
         
@@ -207,15 +207,17 @@ def worker(q, ):
                 sym = calculate_fold_symmetry(molfile['atoms'])                    
                 if sym > 1:
                     C2 = calculate_rotation(molfile['atoms'])
-                    print molfile['id'], len(molfile['atoms']), sym, C2
+                    sys.stdout.write(str(molfile['id']) + "," + str(len(molfile['atoms'])) + "," + str(sym) + "," + str( C2) + "\n")
                 elif "atoms3d" in molfile:
                     sym = calculate_fold_symmetry(molfile['atoms3d'])
                     if sym > 1:
                         C2 = calculate_rotation(molfile['atoms3d'])
-                        print molfile['id'], len(molfile['atoms']), sym, C2
+                        sys.stdout.write(str(molfile['id']) + "," + str(len(molfile['atoms'])) + "," + str(sym) + "," + str( C2) + "\n")
+                        
                     
         #if there are no more items on the Queue then we are done
         except Empty:
+            time.sleep(0.5)
             return
 
 def extract_molfiles(filename):
@@ -245,7 +247,10 @@ def extract_molfiles(filename):
                 if len(header.group(1)) == 5:
                     num_atoms = int(line[0:2])
                 else:
-                    num_atoms = int(line[0:3])#header.group(1))
+                    try:
+                        num_atoms = int(line[0:3])
+                    except ValueError:
+                        num_atoms = int(line[0:3].split(" ")[0])
                 atom_list = []
                 
                 for i in range(num_atoms):
@@ -253,17 +258,16 @@ def extract_molfiles(filename):
                     line = f.next().lstrip()
                     line = re.split("\s+",line,4)
                     
-                    #for j in range(3):
-                    #    np_atom_list[i][j] = float(line[0])
                     if EXCLUDE_HYDROGEN:
                         if line[3] == 'H':
                             continue
-                    
-                    atoms = (float(line[0]), float(line[1]), float(line[2]))#, line[3])
-                    #atoms = (float(line[0]), float(line[1]), float(line[2]), line[3])
-                    atom_list.append(atoms)
+
+                    try:
+                        atoms = (float(line[0]), float(line[1]), float(line[2]))#, line[3])
+                        atom_list.append(atoms)
+                    except ValueError:
+                        pass #skip badly formatted atoms
                 
-                #molecule['atoms'] = np_atom_list
                 molecule['atoms'] = atom_list
                 seen_atom = True
 

@@ -1,0 +1,1 @@
+starcluster start -c computecluster -b 0.85 -s 19 chemcluster
