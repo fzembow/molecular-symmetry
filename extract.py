@@ -6,7 +6,7 @@
 ##
 
 import re, math, os
-from numpy import array, sort, empty, empty_like, float32, int32, around
+from numpy import array, sort, empty, empty_like, float32, int32, around, matrix, asarray
 
 #whether to use GPU-accelerated atomic distance calculations
 USE_GPU = False
@@ -104,7 +104,8 @@ def process_single(filename):
     for molfile in extract_molfiles(filename):
         sym = calculate_fold_symmetry(molfile['atoms'])
         if sym > 1:
-            print molfile['id'], sym
+            type = calculate_rotation(molfile)
+            print molfile['id'], sym, type
             
 def process_multiple(filename, secondfile=None):
     '''
@@ -246,6 +247,12 @@ def arrays_equal(a,b):
     determines whether two arrays are equal, elementwise. 
     NOTE: assumes the arrays are the same length, and that the first element is always the same
     '''
+
+	#Method that's currently working.
+	#for i in range(1,len(a)):
+    #    if math.fabs(a[i] - b[i]) > TOLERANCE:
+    #        return False
+    
     false_count = 0.0
 
     for i in range(1, len(a)):
@@ -297,6 +304,49 @@ def dist(coord1, coord2):
     
     return round(math.sqrt( (coord1[0] - coord2[0]) ** 2 + (coord1[1] - coord2[1]) ** 2 + (coord1[2] - coord2[2]) ** 2 ),PRECISION)
     
+def calculate_rotation(molecule):
+    atoms = molecule['atoms']
+
+    centroid = find_centroid(atoms)
+
+    new_coordinates = []
+
+    for atom in atoms:
+        mat = matrix([[atom[0] - centroid[0]], [atom[1] - centroid[1]], [atom[2] - centroid[2]]])
+        # find new coordinates by checking z_
+        new_coord = find_new_coord(mat)
+        new_coordinates.append((new_coord[0,0] + centroid[0], new_coord[1,0]+centroid[1], new_coord[2,0] + centroid[2]))
+        
+    atoms_s =  sort(atoms, axis=0)
+    new_coordinates_s = sort(new_coordinates, axis=0)
+    print atoms
+    print atoms_s
+    #if arrays_equal(atoms_s, new_coordinates_s):
+    #    return "C2 along z-axis"
+    #else:
+    #    return "No C2"
+
+    #print centroid
+
+def find_new_coord(mat):
+   C2_z_mat = matrix('-1 0 0; 0 -1 0; 0 0 1')
+   new_coord = C2_z_mat * mat
+   #return asarray(new_coord)
+   return asarray(new_coord)
+
+def find_centroid(atoms):
+    x_sum = 0.0
+    y_sum = 0.0
+    z_sum = 0.0
+    count = 0
+    for atom in atoms:
+        count += 1
+        x_sum += atom[0]
+        y_sum += atom[1]
+        z_sum += atom[2]
+
+    return (x_sum/count, y_sum/count, z_sum/count)
+
 def calculate_fold_symmetry(atoms):
     
     #number of atoms
