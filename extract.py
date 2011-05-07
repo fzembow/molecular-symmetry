@@ -7,6 +7,7 @@
 
 import re, math, os
 from numpy import array, sort, empty, empty_like, float32, int32, around, matrix, asarray
+from itertools import izip
 
 #whether to use GPU-accelerated atomic distance calculations
 USE_GPU = False
@@ -104,7 +105,7 @@ def process_single(filename):
     for molfile in extract_molfiles(filename):
         sym = calculate_fold_symmetry(molfile['atoms'])
         if sym > 1:
-            type = calculate_rotation(molfile)
+            type = calculate_rotation(molfile['atoms'])
             print molfile['id'], sym, type
             
 def process_multiple(filename, secondfile=None):
@@ -180,7 +181,7 @@ def worker(q, ):
                 sym = calculate_fold_symmetry(molfile['atoms'])
                                 
                 if sym > 1:
-                    print molfile['id'], sym
+                    print molfile['id'], sym, C2
                 elif "atoms3d" in molfile:
                     sym = calculate_fold_symmetry(molfile['atoms3d'])
                     if sym > 1:
@@ -309,9 +310,7 @@ def dist(coord1, coord2):
     
     return round(math.sqrt( (coord1[0] - coord2[0]) ** 2 + (coord1[1] - coord2[1]) ** 2 + (coord1[2] - coord2[2]) ** 2 ),PRECISION)
     
-def calculate_rotation(molecule):
-    atoms = molecule['atoms']
-
+def calculate_rotation(atoms):
     centroid = find_centroid(atoms)
 
     new_coordinates = []
@@ -322,10 +321,14 @@ def calculate_rotation(molecule):
         new_coord = find_new_coord(mat)
         new_coordinates.append((new_coord[0,0] + centroid[0], new_coord[1,0]+centroid[1], new_coord[2,0] + centroid[2]))
         
-    atoms_s =  sorted(atoms, key=lambda i: i[0])
-    new_coordinates_s = sorted(new_coordinates, key=lambda i: i[0])
-    print new_coordinates_s
-    print atoms_s
+    atoms_s =  sorted(atoms, key=lambda i: (i[0], i[1]))
+    new_coordinates_s = sorted(new_coordinates, key=lambda i: (i[0], i[1]))
+   
+    for a, b in izip(atoms_s, new_coordinates_s):
+        if math.fabs(a[0] - b[0]) > TOLERANCE or math.fabs(a[1] - b[1]) > TOLERANCE or math.fabs(a[2] - b[2]) > TOLERANCE:
+            return "No C2 symmetry"
+
+    return "C2 symmetry"
     #if arrays_equal(atoms_s, new_coordinates_s):
     #    return "C2 along z-axis"
     #else:
