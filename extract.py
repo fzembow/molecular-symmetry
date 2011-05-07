@@ -43,7 +43,7 @@ if USE_GPU:
 USE_MULTIPROCESSING = True
 
 if USE_MULTIPROCESSING:
-    from multiprocessing import Queue, Process, cpu_count
+    from multiprocessing import Manager, Queue, Process, cpu_count
     NUM_PROCESSES = cpu_count()
     WORK_SIZE = 2
     QUEUE_TIMEOUT = 0.25
@@ -124,7 +124,8 @@ def process_multiple(filename, secondfile=None):
         two_molfiles = False
     
     #add all molecules in a file to the queue, in lists of size WORK_SIZE
-    q = Queue()
+    manager = Manager()
+    q = manager.Queue()
     work = []
     for molfile in extract_molfiles(filename):
         
@@ -177,9 +178,13 @@ def worker(q, ):
                 
             for molfile in work:
                 sym = calculate_fold_symmetry(molfile['atoms'])
+                                
                 if sym > 1:
                     print molfile['id'], sym
-                    break
+                elif "atoms3d" in molfile:
+                    sym = calculate_fold_symmetry(molfile['atoms3d'])
+                    if sym > 1:
+                        print molfile['id'], sym
                     
         #if there are no more items on the Queue then we are done
         except Empty:
