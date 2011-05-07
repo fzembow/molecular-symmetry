@@ -71,11 +71,15 @@ ID_FIELD_RE = re.compile("^> <PUBCHEM_COMPOUND_CID>")
 def main():
     
     import sys
-    if len(sys.argv) != 2:
+    if len(sys.argv) != 2 and len(sys.argv) != 3:
         print "usage: python extract_sdf.py (input)"
         sys.exit(1)
     
     filename = sys.argv[1]
+    if len(sys.argv) == 3:
+        filename2 = sys.argv[2]
+    else:
+        filename2 = None
 
     if TIMING:
         #start keeping track of time
@@ -84,7 +88,7 @@ def main():
     
     #run calculation on all molecules with multiple processes
     if USE_MULTIPROCESSING:
-        process_multiple(filename)
+        process_multiple(filename, filename2)
         
     #run calculation on all molecules    
     else:
@@ -98,22 +102,40 @@ def process_single(filename):
     single process detection of symmetry
     '''
     for molfile in extract_molfiles(filename):
-        sym = calculate_fold_symmetry(molfile)
+        sym = calculate_fold_symmetry(molfile['atoms'])
         if sym > 1:
             print molfile['id'], sym
             
-def process_multiple(filename):
+def process_multiple(filename, secondfile=None):
     '''
     multiprocess detection of symmetry
     '''
     if TIMING:
         import time
         start = time.time()
+            
+    #if we are syncing with a 3D file
+    if secondfile is not None:
+        two_molfiles = True
+        second_generator = extract_molfiles(secondfile)
+        molfile2 = second_generator.next()
+    else:
+        two_molfiles = False
     
     #add all molecules in a file to the queue, in lists of size WORK_SIZE
     q = Queue()
     work = []
     for molfile in extract_molfiles(filename):
+        
+        #if we have a molfile from the second file, then append that to the work unit
+        if two_molfiles:
+            if molfile2['id'] == molfile['id']:
+                molfile['atoms3d'] = molfile2['atoms']
+                try:
+                    molfile2 = second_generator.next()
+                except StopIteration:
+                    two_molfiles = False
+      
         work.append(molfile)
         if len(work) < WORK_SIZE:
             continue
@@ -148,11 +170,16 @@ def worker(q, ):
     from Queue import Empty
     while True:
         try:
-            work = q.get(True, QUEUE_TIMEOUT)
+            work = q.get(True, QUEUE_TIMEOUT)    
+            #try all of the molfiles in this work unit, stop when we encounter symmetry.
+            # work_unit[0] is the 2D molfile
+                
             for molfile in work:
-                sym = calculate_fold_symmetry(molfile)
+                sym = calculate_fold_symmetry(molfile['atoms'])
                 if sym > 1:
                     print molfile['id'], sym
+                    break
+                    
         #if there are no more items on the Queue then we are done
         except Empty:
             return
@@ -270,9 +297,7 @@ def dist(coord1, coord2):
     
     return round(math.sqrt( (coord1[0] - coord2[0]) ** 2 + (coord1[1] - coord2[1]) ** 2 + (coord1[2] - coord2[2]) ** 2 ),PRECISION)
     
-def calculate_fold_symmetry(molecule):
-    
-    atoms = molecule['atoms']
+def calculate_fold_symmetry(atoms):
     
     #number of atoms
     N = len(atoms)
