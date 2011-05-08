@@ -5,7 +5,7 @@
 # from NCBI and runs a molecular calculation on it
 # 
 
-import sys, subprocess, json
+import sys, json
 import extract
 
 count = 0

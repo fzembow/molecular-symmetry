@@ -31,6 +31,10 @@ def main():
 
 def download_images(filename):
 
+    '''
+    for a given results file, downloads all of the images of the associated compounds
+    '''
+
     import subprocess
     folder_name = filename.split(".")[0] + '-img'
     target_image = folder_name + "/%i.png"
@@ -42,9 +46,9 @@ def download_images(filename):
     f = open(filename, "r")
     
     for line in f:
-        l = line.strip().split(" ")
-        if len(l) == 2:
-            sym = int(l[1])
+        l = line.strip().split("\t")
+        if len(l) == 4:
+            sym = int(l[2])
             cid = int(l[0])
             
             subprocess.call(["wget", "-O", target_image % cid, url % cid])
