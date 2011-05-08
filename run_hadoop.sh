@@ -14,3 +14,14 @@ hadoop jar $SJAR -input urls-full.txt -output hadoop_output/ -mapper $(pwd)/mapp
 
 # retrieve results
 hadoop fs -copyToLocal hadoop_output/ hadoop_output/
+
+# concatenate files
+cat hadoop_output/part* ./results.txt
+
+# change commas to tabs in the results
+perl -pi -e 's/,/\t/g' results.txt 
+
+# sort the results
+sort -n -o results-sorted.txt -k 1 results.txt
+rm results.txt
+mv results-sorted.txt results.txt
