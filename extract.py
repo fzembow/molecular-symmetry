@@ -41,7 +41,7 @@ if USE_GPU:
 #whether to use multiple processes, sharing molecules with a Queue
 #NOTE: you can't do multiprocessing with gpu acceleration unless you have 
 #multiple GPUs
-USE_MULTIPROCESSING = True
+USE_MULTIPROCESSING = False
 
 if USE_MULTIPROCESSING:
     from multiprocessing import Manager, Queue, Process, cpu_count
@@ -262,8 +262,12 @@ def extract_molfiles(filename):
                         if line[3] == 'H':
                             continue
 
+                    string_f = 0.
+                    for c in line[3]:
+                        string_f +=  ord(c)
+                    
                     try:
-                        atoms = (float(line[0]), float(line[1]), float(line[2]))#, line[3])
+                        atoms = (float(line[0]), float(line[1]), float(line[2]), string_f)
                         atom_list.append(atoms)
                     except ValueError:
                         pass #skip badly formatted atoms
@@ -342,7 +346,7 @@ def dist(coord1, coord2):
     
     #TODO: don't need to do the square root -- but need to adjust TOLERANCE to compensate. however, this only saves like 2 seconds on the entire calculation... forget it
     
-    return round(math.sqrt( (coord1[0] - coord2[0]) ** 2 + (coord1[1] - coord2[1]) ** 2 + (coord1[2] - coord2[2]) ** 2 ),PRECISION)
+    return round(math.sqrt( (coord1[0] - coord2[0]) ** 2 + (coord1[1] - coord2[1]) ** 2 + (coord1[2] - coord2[2]) ** 2 ) + (coord1[3] - coord2[3]),PRECISION)
     
 def calculate_rotation(atoms):
     centroid = find_centroid(atoms)
