@@ -1,7 +1,11 @@
 
 # remove existing output, if any
 hadoop fs -rmr hadoop_output/
+hadoop fs -rm urls-full.txt
 rm -rf hadoop_output/
+
+# copy the input file to HDFS
+hadoop fs -copyFromLocal urls-full.txt/ urls-full.txt/
 
 # get reference to hadoop streaming jar
 export SJAR=/usr/lib/hadoop/contrib/streaming/hadoop-streaming-0.20.2*.jar
