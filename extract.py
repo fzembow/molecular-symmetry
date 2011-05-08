@@ -30,7 +30,7 @@ if USE_GPU:
         
         if(idx < N && idy < N)
         {
-        result[idx + __umul24(idy,N)] = floorf(sqrt(pow(a[__umul24(idx,3)] - a[__umul24(idy,3)],2) + pow(a[__umul24(idx,3) + 1] - a[__umul24(idy,3) + 1],2) + pow(a[__umul24(idx,3) + 2] - a[__umul24(idy,3) + 2],2)) * 1000 +  0.5) / 1000;
+        result[idx + __umul24(idy,N)] = floorf(sqrt(pow(a[__umul24(idx,4)] - a[__umul24(idy,4)],2) + pow(a[__umul24(idx,4) + 1] - a[__umul24(idy,4) + 1],2) + pow(a[__umul24(idx,4) + 2] - a[__umul24(idy,4) + 2],2)) * 1000 +  0.5) / 1000;
         }
       }
       """)
@@ -262,6 +262,7 @@ def extract_molfiles(filename):
                         if line[3] == 'H':
                             continue
 
+                    #add a "distance" to account for the element type
                     string_f = 0.
                     for c in line[3]:
                         string_f +=  ord(c)
@@ -269,8 +270,8 @@ def extract_molfiles(filename):
                     try:
                         atoms = (float(line[0]), float(line[1]), float(line[2]), string_f)
                         atom_list.append(atoms)
-                    except ValueError:
-                        pass #skip badly formatted atoms
+                    except ValueError: #skip badly formatted atoms
+                        pass 
                 
                 molecule['atoms'] = atom_list
                 seen_atom = True
@@ -305,6 +306,7 @@ def arrays_equal(a,b):
 
     full = len(a) - 1.0
 
+    #only allow a 10% error
     if  (false_count / full) < 0.1:
         return True
     else:
